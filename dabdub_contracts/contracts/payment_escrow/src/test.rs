@@ -853,7 +853,7 @@ fn test_max_ttl_payment_accessible_before_and_at_expiry() {
 
 #[test]
 fn test_max_ttl_rejects_early_refund_and_allows_refund_after_expiry() {
-    let (env, client, _contract_id, _admin, customer, merchant, usdc, ..) = setup_env();
+    let (env, client, contract_id, _admin, customer, merchant, usdc, ..) = setup_env();
     let ttl = client.get_max_ttl_ledgers();
     let expiry = env.ledger().sequence() + ttl;
     let id = make_id(&env, 102);
@@ -861,9 +861,9 @@ fn test_max_ttl_rejects_early_refund_and_allows_refund_after_expiry() {
     // The token is an independent contract. Its maintenance is not escrow's
     // responsibility; keep this fixture's token state live for the ledger jump.
     env.as_contract(&usdc, || {
-        use soroban_sdk::testutils::storage::Persistent;
         env.storage().instance().extend_ttl(ttl + 1, ttl + 1);
-        for key in env.storage().persistent().all().keys() {
+        for owner in [&contract_id, &customer] {
+            let key = (soroban_sdk::symbol_short!("Balance"), owner.clone());
             env.storage().persistent().extend_ttl(&key, ttl + 1, ttl + 1);
         }
     });
