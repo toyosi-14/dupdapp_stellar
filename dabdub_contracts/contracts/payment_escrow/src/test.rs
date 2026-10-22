@@ -41,7 +41,7 @@ fn deploy_escrow(
             usdc,
             &DEFAULT_PAYMENT_TTL,
             &registry,
-            emergency_signers,
+            emergency_signers.clone(),
             emergency_treasury,
             &EMERGENCY_COOLDOWN_LEDGERS,
         ),
