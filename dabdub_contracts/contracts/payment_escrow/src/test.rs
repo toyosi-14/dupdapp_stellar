@@ -833,7 +833,12 @@ fn test_max_ttl_payment_accessible_before_and_at_expiry() {
     let id = make_id(&env, 101);
     client.deposit(&customer, &id, &merchant, &100, &ttl, &AssetType::Usdc);
     env.as_contract(&contract_id, || {
-        assert!(env.storage().persistent().get_ttl(&crate::DataKey::Payment(id.clone())) >= ttl + 1);
+        assert!(
+            env.storage()
+                .persistent()
+                .get_ttl(&crate::DataKey::Payment(id.clone()))
+                >= ttl + 1
+        );
         assert!(env.storage().instance().get_ttl() >= ttl + 1);
     });
     // Cover both the issue's absolute ledger and the relative lifetime boundary.
@@ -855,7 +860,9 @@ fn test_max_ttl_rejects_early_refund_and_allows_refund_after_expiry() {
     client.deposit(&customer, &id, &merchant, &100, &ttl, &AssetType::Usdc);
     // The token is an independent contract. Its maintenance is not escrow's
     // responsibility; keep this fixture's token state live for the ledger jump.
-    env.as_contract(&usdc, || env.storage().instance().extend_ttl(ttl + 1, ttl + 1));
+    env.as_contract(&usdc, || {
+        env.storage().instance().extend_ttl(ttl + 1, ttl + 1)
+    });
     env.ledger().set_sequence_number(expiry);
     assert!(client.try_refund(&id).is_err());
     assert_eq!(client.get_payment(&id).status, PaymentStatus::Pending);
@@ -874,11 +881,32 @@ fn test_max_ttl_admin_change_is_prospective_and_does_not_shorten_storage() {
     client.deposit(&customer, &id, &merchant, &100, &ttl, &AssetType::Usdc);
     let expiry = client.get_expiry(&id);
     client.set_max_ttl_ledgers(&admin, &100);
-    assert!(client.try_deposit(&customer, &make_id(&env, 104), &merchant, &100, &101, &AssetType::Usdc).is_err());
-    client.deposit(&customer, &make_id(&env, 105), &merchant, &100, &100, &AssetType::Usdc);
+    assert!(client
+        .try_deposit(
+            &customer,
+            &make_id(&env, 104),
+            &merchant,
+            &100,
+            &101,
+            &AssetType::Usdc
+        )
+        .is_err());
+    client.deposit(
+        &customer,
+        &make_id(&env, 105),
+        &merchant,
+        &100,
+        &100,
+        &AssetType::Usdc,
+    );
     assert_eq!(client.get_expiry(&id), expiry);
     env.as_contract(&contract_id, || {
-        assert!(env.storage().persistent().get_ttl(&crate::DataKey::Payment(id.clone())) >= ttl + 1);
+        assert!(
+            env.storage()
+                .persistent()
+                .get_ttl(&crate::DataKey::Payment(id.clone()))
+                >= ttl + 1
+        );
         assert!(env.storage().instance().get_ttl() >= ttl + 1);
     });
 }
@@ -890,7 +918,16 @@ fn test_max_ttl_storage_limit_rejects_deposit_before_moving_funds() {
     client.set_max_ttl_ledgers(&admin, &u32::MAX);
     let balance = token::Client::new(&env, &usdc).balance(&customer);
     for ttl in [limit, u32::MAX] {
-        assert!(client.try_deposit(&customer, &make_id(&env, 106), &merchant, &100, &ttl, &AssetType::Usdc).is_err());
+        assert!(client
+            .try_deposit(
+                &customer,
+                &make_id(&env, 106),
+                &merchant,
+                &100,
+                &ttl,
+                &AssetType::Usdc
+            )
+            .is_err());
         assert_eq!(token::Client::new(&env, &usdc).balance(&customer), balance);
     }
 }
