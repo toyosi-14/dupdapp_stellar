@@ -461,7 +461,9 @@ impl PaymentEscrowContract {
         };
 
         env.storage().persistent().set(&key, &payment);
-        env.storage().persistent().extend_ttl(&key, retention, retention);
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, retention, retention);
         // Keep the escrow code and configuration callable for the same period.
         // Extending for a shorter new payment never shortens existing TTLs.
         env.storage().instance().extend_ttl(retention, retention);

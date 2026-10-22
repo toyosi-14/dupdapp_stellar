@@ -343,7 +343,8 @@ impl MerchantRegistryContract {
             panic!("Merchant already active");
         }
         if record.status == MerchantStatus::Terminated {
-            panic!("Cannot reac
+            panic!("Cannot reactivate terminated merchant");
+        }
 
         record.status = MerchantStatus::Active;
         env.storage().persistent().set(&key, &record);

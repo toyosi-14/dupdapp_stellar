@@ -22,12 +22,15 @@ jobs:
       - name: Baseline compilation
         continue-on-error: true
         run: |
+          git fetch origin 8075573edb55dd6bb5964e5301886aafc0b96f67 --depth=1
           git worktree add /tmp/ttl-baseline 8075573edb55dd6bb5964e5301886aafc0b96f67
           cd /tmp/ttl-baseline/dabdub_contracts
           CARGO_TARGET_DIR="$GITHUB_WORKSPACE/dabdub_contracts/target" cargo test -p payment-escrow --no-run
       - name: Format escrow files
         working-directory: dabdub_contracts
-        run: cargo fmt -p payment-escrow
+        run: |
+          cargo fmt -p payment-escrow
+          python3 -c "import base64,pathlib; print('FORMATTED_TEST=' + base64.b64encode(pathlib.Path('contracts/payment_escrow/src/test.rs').read_bytes()).decode())"
       - name: Lifetime regressions
         working-directory: dabdub_contracts
         run: cargo test -p payment-escrow test_max_ttl -- --nocapture
