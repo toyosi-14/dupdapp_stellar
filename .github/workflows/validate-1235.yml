@@ -1,0 +1,51 @@
+name: Issue 1235 validation
+on:
+  push:
+    branches: [validation/1235-ttl-c82f]
+permissions:
+  contents: read
+jobs:
+  escrow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: dtolnay/rust-toolchain@67ef31d5b988238dd797d409d6f9574278e20537
+        with:
+          toolchain: 1.88.0
+          targets: wasm32v1-none
+          components: rustfmt
+      - name: Baseline compilation
+        continue-on-error: true
+        run: |
+          git worktree add /tmp/ttl-baseline 8075573edb55dd6bb5964e5301886aafc0b96f67
+          cd /tmp/ttl-baseline/dabdub_contracts
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/dabdub_contracts/target" cargo test -p payment-escrow --no-run
+      - name: Format escrow files
+        working-directory: dabdub_contracts
+        run: cargo fmt -p payment-escrow
+      - name: Lifetime regressions
+        working-directory: dabdub_contracts
+        run: cargo test -p payment-escrow test_max_ttl -- --nocapture
+      - name: Full escrow suite
+        if: always()
+        working-directory: dabdub_contracts
+        run: cargo test -p payment-escrow -- --nocapture
+      - name: Escrow WASM
+        if: always()
+        working-directory: dabdub_contracts
+        run: cargo build -p payment-escrow --target wasm32v1-none --release
+      - name: Workspace tests
+        if: always()
+        working-directory: dabdub_contracts
+        run: cargo test --workspace --no-run
+      - name: Save formatted files
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: escrow-formatted
+          path: dabdub_contracts/contracts/payment_escrow/src/*.rs
