@@ -1,6 +1,5 @@
 #![no_std]
 
-#[cfg(test)]
 mod test;
 
 use soroban_sdk::{
@@ -344,8 +343,7 @@ impl MerchantRegistryContract {
             panic!("Merchant already active");
         }
         if record.status == MerchantStatus::Terminated {
-            panic!("Cannot reactivate terminated merchant");
-        }
+            panic!("Cannot reac
 
         record.status = MerchantStatus::Active;
         env.storage().persistent().set(&key, &record);
